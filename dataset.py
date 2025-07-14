@@ -16,9 +16,9 @@ class MiDataset(Dataset):
         self.dataframe = dataframe
         self.transform = transform
         self.seq_len = seq_len
-        self.target_size = target_size  # Tamaño al que redimensionar las imágenes
-        self.num_blocks_per_folder = num_blocks_per_folder  # Número de bloques por carpeta
-        self.mode = mode  # Modo: 'train' o 'val'
+        self.target_size = target_size  #resize images
+        self.num_blocks_per_folder = num_blocks_per_folder  #number of block per folder
+        self.mode = mode  # Mode: 'train' o 'val'
 
     def __len__(self):
         return len(self.dataframe)
@@ -27,7 +27,7 @@ class MiDataset(Dataset):
         vpath, vlen = self.dataframe.iloc[idx]
         npy_files = []
 
-        # Si estamos en modo 'train', generamos 3 bloques, sino 1 bloque para validación
+        # If in 'train' mode, generate 3 blocks; otherwise, generate 1 block for validation.
         all_blocks = []
         if self.mode == 'train':
             for _ in range(self.num_blocks_per_folder):
@@ -35,34 +35,34 @@ class MiDataset(Dataset):
                 all_blocks.append(block)
         elif self.mode == 'val':
             for _ in range(self.num_blocks_per_folder):
-                block = self.generate_random_block(vlen)  # Solo un bloque para validación
+                block = self.generate_random_block(vlen) 
                 all_blocks.append(block)
 
-        # Procesar cada bloque por separado
+        # Process each block separately.
         for block in all_blocks:
             images = []
             for i in block:
-                # Ruta para cargar la imagen del flujo óptico
+                # Path to load the optical flow image
                 seq = os.path.join('/home/smora/', vpath, '%010d.png' % (i + 1)) 
                 
-                # Cargar la imagen
+                # open image
                 image = Image.open(seq)
                 
                 if self.transform:
                     image = self.transform(image)
                 images.append(image)
             
-            # Apilar las imágenes del bloque en un tensor
+            
             images_tensor = torch.stack(images, dim=0)
 
-            # Devolver el tensor de imágenes (una secuencia de imágenes por bloque)
+           
             npy_files.append(images_tensor)
 
         return npy_files
 
     def generate_random_block(self, vlen):
         """
-        Generar un bloque aleatorio asegurando que no se solapen las secuencias.
+        # Generate a random block, ensuring that the sequences do not overlap.
         """
         start_idx = np.random.choice(range(vlen - self.seq_len))
         block = np.arange(start_idx, start_idx + self.seq_len)
@@ -70,16 +70,16 @@ class MiDataset(Dataset):
 
 
 
-# Dimensiones de ejemplo (370, 1224)
+# dimension of image
 height = 370
 width = 1224
-new_height = int(height/4)  # Nueva altura (ejemplo)
+new_height = int(height/4)  
 
-# Calcular el nuevo ancho manteniendo la relación de aspecto
+# Calculate the new width while maintaining the aspect ratio
 aspect_ratio = width / height
 new_width = int(new_height * aspect_ratio)
 
-# Definir las transformaciones si es necesario (por ejemplo, normalización)
+# Define the transformations if needed
 transform = transforms.Compose([
     transforms.Resize((new_height,new_width),interpolation=transforms.InterpolationMode.BILINEAR),
     transforms.ToTensor()   ]) 
