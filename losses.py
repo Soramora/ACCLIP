@@ -1,6 +1,6 @@
-# Aquí se definirá combined_loss y OpticalFlowLoss
+
 # ======================================================
-# 5. Función de pérdida suma ponderada de MSE y SSIM
+# loss Functión  alfa*MSE + (1 - alfa)SSIM + beta*acclip
 # ======================================================
 
 def combined_loss(img1, img2, alpha):
@@ -9,7 +9,7 @@ def combined_loss(img1, img2, alpha):
     return alpha * mse + (1 - alpha) * ssim
 
 
-    #########################################33
+    #########################################
 
 class OpticalFlowLoss(torch.nn.Module):
     def __init__(self):
@@ -28,18 +28,18 @@ class OpticalFlowLoss(torch.nn.Module):
         batch_size, num_frames, _, _, _ = real_frames.shape
         loss = 0.0
 
-        for i in range(num_frames - 1):  # Iterar sobre pares de frames consecutivos
+        for i in range(num_frames - 1):  
             img1_real = torch.mean(real_frames[:, i], dim=1)  # (batch, H, W)
             img2_real = torch.mean(real_frames[:, i+1], dim=1)
 
             img1_pred = torch.mean(pred_frames[:, i], dim=1)
             img2_pred = torch.mean(pred_frames[:, i+1], dim=1)
 
-            # Calcular flujos ópticos
+            # optical flow
             flow_real = self.compute_optical_flow(img1_real, img2_real)
             flow_pred = self.compute_optical_flow(img1_pred, img2_pred)
 
-            # Diferencia de flujo
+            # diff optical flow
             flow_loss = F.l1_loss(flow_real, flow_pred)
             loss += flow_loss
 
@@ -48,22 +48,22 @@ class OpticalFlowLoss(torch.nn.Module):
 
 def loss_function(pred, target, alpha=0.7, beta=0.2, weights=None):
     """
-    Calcula una pérdida combinada entre MSE, SSIM y Flujo Óptico.
+    Calculate a combined loss between MSE, SSIM, and Optical Flow.
 
     Args:
-        pred (Tensor): Predicción del modelo. Dim: (batch, num_predictions, C, H, W)
-        target (Tensor): Imagen real esperada. Dim: (batch, num_predictions, C, H, W)
-        alpha (float): Peso de la pérdida MSE en la combinación.
-        beta (float): Peso de la pérdida basada en flujo óptico.
-        weights (Tensor, opcional): Pesos para cada imagen en la secuencia.
+        pred (Tensor): Model prediction. Shape: (batch, num_predictions, C, H, W)
+        target (Tensor): Ground‐truth image. Shape: (batch, num_predictions, C, H, W)
+        alpha (float): Weight of the MSE loss in the combination.
+        beta (float): Weight of the optical flow–based loss.
+        weights (Tensor, optional): Weights for each image in the sequence.
 
     Returns:
-        loss (Tensor): Pérdida total combinada.
+        loss (Tensor): Combined total loss.
     """
-    # 🔹 Calculamos la pérdida MSE por imagen
+    # Calculate the MSE loss per image.
     mse_losses = F.mse_loss(pred, target, reduction='none').mean(dim=(2,3,4))  # (batch, num_predictions)
     
-    # 🔹 Calculamos el SSIM por imagen
+    # Calculate the SSIM loss per image.
     ssim_losses = torch.zeros_like(mse_losses)   # (batch, num_predictions)
     for i in range(pred.shape[1]):  # Iterar sobre num_predictions
         for j in range(pred.shape[0]):  # Iterar sobre batch
@@ -74,17 +74,17 @@ def loss_function(pred, target, alpha=0.7, beta=0.2, weights=None):
                     channel_axis=2,
                     data_range=1.0
                 ),
-                device=pred.device, dtype=torch.float32  # 🔹 Convertir a tensor en la GPU
+                device=pred.device, dtype=torch.float32  # 
             )
-    ssim_losses = 1 - ssim_losses  # Convertir a una "pérdida" (1 - SSIM)
+    ssim_losses = 1 - ssim_losses 
 
-    # 🔹 Aplicar pesos (si se proporciona)
+    # Apply weights (if provided).
     if weights is not None:
-        weights = weights.view(1, -1, 1, 1, 1)  # Expandir dimensiones
-        mse_losses = mse_losses * weights  # Aplicar pesos a MSE
-        ssim_losses = ssim_losses * weights.squeeze()  # Aplicar pesos a SSIM
+        weights = weights.view(1, -1, 1, 1, 1)  
+        mse_losses = mse_losses * weights
+        ssim_losses = ssim_losses * weights.squeeze() 
 
-    # 🔹 Calculamos la pérdida de flujo óptico
+    #  Calculate Optical flow  loss per image.
     optical_flow_loss = OpticalFlowLoss().to(pred.device)
     flow_loss_value = optical_flow_loss(target, pred)
 
