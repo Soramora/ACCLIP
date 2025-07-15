@@ -25,7 +25,7 @@ Make the run script executable:
 Execution:
 Use the following command from the directory containing run_caltech.sh:
   ./run_caltech.sh \
-    /home/smora/model_weights/ACCLIP_100epocas_alfa04_beta07_8pred_MSE_0024.pth \
+    /path/to/model_weights/*.pth \
     /home/smora/caltech_pedestrian_test.csv \
     caltech_pedestrian/frames
 
