@@ -1,0 +1,27 @@
+Execution:
+Use the following command from the directory containing run_caltech.sh:
+  ./run_kth.sh \
+    /path/to/model_weights/*.pth \
+    /home/smora/kth_test.csv \
+    kth/frames
+
+Arguments:
+1. weights       Path to the pretrained model weights (.pth file)
+2. csv           Path to the test split CSV file (video_path, video_length)
+3. root_dir      Path to the KTH-Sataset dataset root directory
+
+Optional arguments (defaults in parentheses):
+4. num_pred      Number of frames to predict (8)
+5. initial_seq   Number of warm-up frames before prediction (10)
+6. mode          Dataset mode: 'val' (evaluation) 
+
+Example with all parameters:
+  ./run_kth.sh \
+    /path/to/model.pth \
+    /path/to/kth_test.csv \
+    kth/frames \
+    val
+
+Output:
+- Prints SSIM and PSNR for the  predicted frames.
+- Saves an image file name first20_gt_pred.png in the current directory, where the 20 predicted frames and the ground truth is printed
