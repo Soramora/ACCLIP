@@ -1,6 +1,6 @@
 
 # ============================
-# Configuración del Dataset
+# dataset configuration
 # ============================
 dataset:
   data_dir: "/home/smora"
@@ -14,7 +14,7 @@ dataset:
   num_blocks_per_folder: 2
 
 # ============================
-# Configuración del Entrenamiento
+# train configuration
 # ============================
 training:
   batch_size: 1
@@ -37,7 +37,7 @@ scheduled_sampling:
   decay_rate: 0.99
 
 # ============================
-# Paths y Resultados
+# Paths and results
 # ============================
 output:
   log_dir: "logs"
@@ -45,7 +45,7 @@ output:
 
 
 # ============================
-# Logging de rendimiento
+# Logging 
 # ============================
 performance_logging:
   enabled: true
