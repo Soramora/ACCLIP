@@ -1,0 +1,21 @@
+## Running the Pre-trained ACCLIP Model on KITTI
+
+To run the pre-trained ACCLIP model on the KITTI test set, use the provided `run_kitti.sh` script with the following command:
+
+```bash
+sh ./run_kitti.sh \
+  path/to/weight/*.pth \
+  /path/to/kitti_test.csv \
+  /path/to/images/ \
+  20
+
+
+Arguments
+
+Model weights: Path to the .pth file containing the trained model
+
+Test CSV: Path to the kitti_test.csv file with test sequences
+
+Output directory: Directory where predictions and logs will be saved
+
+Number of predictions: How many future frames to predict (e.g., 10)
