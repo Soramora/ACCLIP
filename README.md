@@ -29,6 +29,8 @@ It supports configurable training via a YAML file, performance logging, and auto
 
 ## Directory Structure
 
+
+
 ## Requirements
 
 - **Python** >= 3.8  
@@ -40,6 +42,14 @@ pandas>=2.0.0
 PyYAML>=6.0.0
 tqdm>=4.65.0
 Pillow>=9.5.0
+
+## Running the Pre-trained Model
+
+To run the pre-trained model on the different datasets, navigate to the `test` directory and execute the shell script. The model weights are stored in the `weight` directory.
+
+```bash
+cd test
+./run.sh
 opencv-python>=4.8.0
 scikit-image>=0.21.0
 matplotlib>=3.7.0
