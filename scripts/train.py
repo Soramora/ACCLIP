@@ -28,7 +28,7 @@ def train(model, train_loader, optimizer, config, device, epoch, total_epochs):
         for block in data:
             block = block.to(device)
                   
-            # Obtener las dimensiones del bloque
+            # 
             batch_size , time_steps, channels, height, width = block.shape
     
             input_seq = block.shape[1] - n_pred
