@@ -7,14 +7,14 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 
 from modules.dataset import MiDataset
-from modules.model import AE3
+from modules.model_ACCLIP import ACCLIP
 from scripts.train import train
 from scripts.validate import validate
 from utils.visualization import plot_metrics
 from utils.perf_logger import PerformanceLogger
 
 '''
-# Establecer ruta base
+# 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
 sys.path.append(ROOT_DIR)
@@ -22,13 +22,6 @@ CONFIG_PATH = os.path.join(ROOT_DIR, "config", "config.yaml")
 
 
 
-# Leer archivo de configuración
-with open(CONFIG_PATH, "r") as f:
-    config = yaml.safe_load(f)
-
-# Crear carpetas de salida si no existen
-for path in [config['training']['checkpoint_dir'], "models", "logs", "plots"]:
-    os.makedirs(os.path.join(ROOT_DIR, path), exist_ok=True)
 '''
 
 # ============================
@@ -38,15 +31,15 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.abspath(os.path.join(BASE_DIR, ".."))
 sys.path.append(ROOT_DIR)
 
-# Leer ruta de configuración desde variable de entorno CONFIG_PATH
-# (seteada por tu script Bash), o usar config/config.yaml por defecto
+
+#  config/config.yaml 
 CONFIG_PATH = os.environ.get(
     "CONFIG_PATH",
     os.path.join(ROOT_DIR, "config", "config.yaml")
 )
 
 # ============================
-# Carga de configuración
+# configuration
 # ============================
 with open(CONFIG_PATH, "r") as f:
     config = yaml.safe_load(f)
@@ -55,7 +48,7 @@ print(f"🔧 Usando fichero de config: {CONFIG_PATH}")
 print("  alpha en config:", config['training']['alpha'])
 print("  beta  en config:", config['training']['beta'])
 # ============================
-# Crear carpetas de salida
+# output folders
 # ============================
 for rel_path in [
     config['training']['checkpoint_dir'],
@@ -67,13 +60,13 @@ for rel_path in [
     os.makedirs(abs_path, exist_ok=True)
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Transformaciones
+# 
 transform = transforms.Compose([
     transforms.Resize((config['dataset']['resize_height'], config['dataset']['resize_width'])),
     transforms.ToTensor()
 ])
 
-# Cargar CSV
+# load csv
 train_csv = os.path.join(config['dataset']['data_dir'], config['dataset']['train_csv'])
 val_csv = os.path.join(config['dataset']['data_dir'], config['dataset']['val_csv'])
 
@@ -89,7 +82,7 @@ train_loader = DataLoader(train_dataset, batch_size=config['training']['batch_si
 val_loader = DataLoader(val_dataset, batch_size=config['training']['batch_size'], shuffle=False)
 
 # Modelo
-model = AE3(
+model = ACCLIP(
     num_predictions=config['dataset']['num_predictions'],
     scheduled_sampling_start=config['scheduled_sampling']['start'],
     scheduled_sampling_end=config['scheduled_sampling']['end'],
@@ -102,17 +95,17 @@ optimizer = torch.optim.Adam(
     weight_decay=config['training']['weight_decay']
 )
 
-# Inicializar logger de performance
+# logger de performance
 perf_log_cfg = config.get("performance_logging", {})
 perf_logger = PerformanceLogger(
     enabled=perf_log_cfg.get("enabled", False),
     output_file=perf_log_cfg.get("output_file", "logs/performance_log.csv")
 )
 
-# Métricas por época
+# Métrics
 train_losses, val_losses, train_ssims, val_ssims = [], [], [], []
 
-# Entrenamiento por época
+# train
 best_val_loss = float("inf")
 epochs = config['training']['epochs']
 
@@ -134,7 +127,7 @@ for epoch in range(epochs):
     print(f"[{epoch+1}/{epochs}] Train Loss: {train_loss:.4f} | Val Loss: {val_loss:.4f} | "
           f"Train SSIM: {train_ssim:.4f} | Val SSIM: {val_ssim:.4f}")
 
-    # Guardar checkpoint por época
+    #  chekpoint
     if config['training']['save_checkpoints']:
         ckpt_path = os.path.join(config['training']['checkpoint_dir'], f"checkpoint_epoch_{epoch+1}.pth")
         torch.save({
@@ -144,8 +137,8 @@ for epoch in range(epochs):
             'val_loss': val_loss
         }, ckpt_path)
 
-    # Guardar mejor modelo
-    # 1) Lee primero de entorno, si no existe usa el config cargado
+    # 
+    # 
     alpha_val = float(os.environ.get('ALPHA', config['training']['alpha']))
     beta_val  = float(os.environ.get('BETA',  config['training']['beta']))
     if val_loss < best_val_loss:
@@ -153,17 +146,14 @@ for epoch in range(epochs):
         best_epoch    = epoch + 1
       #  alpha_val     = config['training']['alpha']
        # beta_val      = config['training']['beta']
-        # Componer el nombre con alpha, beta y época
+        # 
         filename      = f"best_model_alpha_{alpha_val}_beta_{beta_val}_epoch_{best_epoch}.pth"
         #filename      = f"best_model_epoch_{best_epoch}.pth"
         torch.save(model.state_dict(), os.path.join("models", filename))
         
         print(f"🔖 Mejor métrica en época {best_epoch} (Val Loss: {best_val_loss:.4f})")
 
-# Guardar curvas
-plot_metrics(train_losses, val_losses, train_ssims, val_ssims, output_dir="plots")
-
-# Guardar CSV de métricas
+# save scv metrics
 metrics_df = pd.DataFrame({
     'epoch': list(range(1, len(train_losses)+1)),
     'train_loss': train_losses,
@@ -173,13 +163,13 @@ metrics_df = pd.DataFrame({
 })
 metrics_df.to_csv("logs/training_metrics.csv", index=False)
 
-# Guardar performance log
+#  performance log
 perf_logger.save()
 
 alpha_val = os.environ.get('ALPHA', config['training']['alpha'])
 beta_val  = os.environ.get('BETA',  config['training']['beta'])
 epochs    = config['training']['epochs']
-# Nombre incluyendo alpha, beta y epoch final
+# name: alpha, beta 
 final_filename = (
     f"final_model_alpha_{alpha_val}"
     f"_beta_{beta_val}"
@@ -191,10 +181,10 @@ torch.save(model.state_dict(), final_model_path)
 print(f"🔖 Modelo final guardado en {final_model_path}")
 '''
 # ============================
-# Guardar modelo de la última época
+# save model
 # ============================
 final_model_path = os.path.join(ROOT_DIR, "models", "final_model.pth")
 torch.save(model.state_dict(), final_model_path)
-print(f"🔖 Modelo final guardado en {final_model_path}")
+#print(f"🔖 Modelo final guardado en {final_model_path}")
 '''
 print(final_model_path)
